@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import "@fontsource/roboto";
-import "./globals.css";
-import OuterWrapper from "./components/OuterWrapper";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,10 +12,8 @@ function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <OuterWrapper>{children}</OuterWrapper>
-      </body>
+    <html lang="ko">
+      <body>{children}</body>
     </html>
   );
 }
