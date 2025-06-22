@@ -1,0 +1,6 @@
+.ProseMirror {
+    padding : 0px !important;
+}
+p.crepe-placeholder {
+    display : none !important;
+}
