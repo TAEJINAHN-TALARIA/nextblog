@@ -105,11 +105,18 @@ function CreatePost() {
                 );
               }
               return publicUrlData.publicUrl;
-            } catch (error) {
-              console.error(
-                "Supabase image upload failed",
-                error.message || error,
-              );
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                console.error(
+                  "Supabase image upload failed",
+                  error.message || error,
+                );
+              } else {
+                console.error(
+                  "Supabase image upload failed",
+                  "An unknown error occurred",
+                );
+              }
               return "https://plus.unsplash.com/premium_photo-1682310096066-20c267e20605?q=80&w=1212&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
             }
           },
