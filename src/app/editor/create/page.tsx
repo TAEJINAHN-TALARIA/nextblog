@@ -4,7 +4,7 @@
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { Crepe, CrepeFeature } from "@milkdown/crepe";
-import { sbClient } from "@/app/sbClient";
+import { sbClient } from "@/app/utils/sbClient";
 import * as React from "react";
 import Box from "@mui/material/Box";
 import ButtonGroup from "@mui/material/ButtonGroup";
@@ -16,14 +16,14 @@ import "./create.css";
 
 function CreatePost() {
   const [postId, setPostId] = React.useState<string | null>(null);
-  const [title, setTitle] = React.useState<string | nulll>("");
-  const [summary, setSummary] = React.useState<string | null>("");
+  const [title, setTitle] = React.useState<string>("");
+  const [summary, setSummary] = React.useState<string>("");
   const crepeRef = React.useRef<Crepe | null>(null);
   const router = useRouter();
 
   // SAVE / SAVE DRAFT 버튼 클릭 시 작동하는 데이터 저장 함수
   const onClickSave = async (draftYn: boolean) => {
-    if (title?.length == 0 || summary?.length == 0 || !title || !summary) {
+    if (title?.length == 0 || summary?.length == 0) {
       // 제목이나 요약이 작성되지 않은 경우 저장이 되지 않도록 함
       alert("Please enter a title and summary both");
       return;
@@ -38,6 +38,7 @@ function CreatePost() {
           summary: summary,
           content: content,
           draftYn: draftYn,
+          createDate: new Date(),
           editDate: new Date(),
         },
       ]);
@@ -45,6 +46,8 @@ function CreatePost() {
       if (error) {
         console.error("Error while saving post", error.message);
         return;
+      } else {
+        console.log("Post saved", data);
       }
       // 저장한 후에는 editor 초기 화면으로 돌아옴
       router.push("/editor");
@@ -67,7 +70,7 @@ function CreatePost() {
       defaultValue: "Hello World",
       featureConfigs: {
         [CrepeFeature.ImageBlock]: {
-          onUpload: async (file: file): Promise<string> => {
+          onUpload: async (file: File): Promise<string> => {
             try {
               // 업로드하는 파일의 확장자명을 가져옴
               const fileExtension = file.name.split(".").pop();
@@ -88,6 +91,8 @@ function CreatePost() {
                 });
               if (error) {
                 throw error;
+              } else {
+                console.log("upload success", data);
               }
               // 저장한 이미지 파일에서 PublicURL을 가져와 Markdown에 저장함
               const { data: publicUrlData } = sbClient.storage
