@@ -98,15 +98,19 @@ function PostView() {
           </IconButton>
         </ButtonGroup>
       </Box>
-      <Typography sx={{ fontSize: "40px", fontWeight: "bold" }}>
+      <Typography
+        sx={{ fontSize: "clamp(25px, 2.1vw, 9999px)", fontWeight: "bold" }}
+      >
         {title}
       </Typography>
-      <Typography sx={{ fontSize: "25px" }}>{summary}</Typography>
+      <Typography sx={{ fontSize: "clamp(15px, 0.79vw, 9999px)" }}>
+        {summary}
+      </Typography>
       <Divider />
       <Box id="editor" sx={{ marginTop: "10px" }}></Box>
       <Divider />
       <Typography
-        sx={{ fontSize: "15px", textAlign: "right" }}
+        sx={{ fontSize: "clamp(15px,0.79vw, 9999px)", textAlign: "right" }}
       >{`Created at : ${convertTimestamp(createDate)} || Last edited at : ${convertTimestamp(editDate)}`}</Typography>
       <Divider />
     </Box>
