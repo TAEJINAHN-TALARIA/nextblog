@@ -1,120 +1,63 @@
-"use client";
+import { createClient } from "../utils/supabase/server";
+import { notFound } from "next/navigation";
+import PostViewClient from "./PostViewClient";
 
-import { useParams, useRouter } from "next/navigation";
-import * as React from "react";
-import { fetchPost } from "@/app/utils/sbClient";
-import { Crepe } from "@milkdown/crepe";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import "@milkdown/crepe/theme/common/style.css";
-import "@milkdown/crepe/theme/frame.css";
-import "./read.css";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import IconButton from "@mui/material/IconButton";
-import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
-import { Divider } from "@mui/material";
-
-function PostView() {
-  const postId = useParams<{ postId: string }>()?.postId ?? "";
-  const [title, setTitle] = React.useState<string>("");
-  const [summary, setSummary] = React.useState<string>("");
-  const [createDate, setCreateDate] = React.useState<string>("");
-  const [editDate, setEditDate] = React.useState<string>("");
-  const crepeRef = React.useRef<Crepe | null>(null);
-  const [mounted, setMounted] = React.useState(false);
-  const router = useRouter();
-
-  React.useEffect(() => {
-    setMounted(true);
-    return () => {
-      if (crepeRef.current) {
-        crepeRef.current.destroy?.();
-        crepeRef.current = null;
-      }
-    };
-  }, []);
-
-  const convertTimestamp = (time: string) => {
-    const date = new Date(time);
-    const year = String(date.getFullYear());
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+export async function generateMetadata({
+  params,
+}: {
+  params: {
+    postId: string;
   };
-
-  React.useEffect(() => {
-    if (!postId || !mounted) return;
-    const fetchTargetPost = async () => {
-      const data = await fetchPost(postId);
-      if (data) {
-        setTitle(data[0].title);
-        setSummary(data[0].summary);
-        setCreateDate(data[0].createDate);
-        setEditDate(data[0].editDate);
-        // 이미 생성된 Crepe 인스턴스가 있다면 제거
-        if (crepeRef.current) {
-          crepeRef.current.destroy?.(); // destroy()가 지원되는 경우
-          crepeRef.current = null;
-        }
-        requestAnimationFrame(() => {
-          const crepe = new Crepe({
-            root: "#editor",
-            defaultValue: data[0].content,
-          });
-          crepe.setReadonly(true);
-          crepe.create();
-          crepeRef.current = crepe;
-        });
-      }
+}) {
+  // supabase client를 불러올 때는 반드시 async - await를 사용하자!
+  const sbClient = await createClient();
+  // supabase에서 데이터를 불러올 때도 반드시 async - await를 사용하자!
+  const { data: post, error } = await sbClient
+    .from("post")
+    .select("title, summary")
+    .eq("postId", params.postId)
+    .single();
+  // error가 발생했거나 데이터가 존재하지 않으면, metadata를 아래와 같이 설정함!
+  if (error || !post) {
+    return {
+      title: "포스트를 찾을 수 없습니다.",
+      description: "요청하신 포스트를 찾을 수 없습니다.",
     };
-    fetchTargetPost();
-  }, [postId, mounted]);
-
-  if (!mounted) return null;
-
-  return (
-    <Box
-      sx={{
-        width: { md: "96vw", lg: "clamp(0px, 60vw, 1100px)" },
-        padding: { md: "0px", lg: "20px 0px" },
-        height: "100vh",
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: { md: "5px", lg: "10px" },
-      }}
-    >
-      <Box
-        className="btnBox"
-        sx={{ display: "flex", justifyContent: "flex-end" }}
-      >
-        <ButtonGroup variant="contained">
-          <IconButton
-            onClick={() => {
-              router.push(`/`);
-            }}
-          >
-            <KeyboardBackspaceIcon />
-          </IconButton>
-        </ButtonGroup>
-      </Box>
-      <Typography
-        sx={{ fontSize: "clamp(25px, 2.1vw, 9999px)", fontWeight: "bold" }}
-      >
-        {title}
-      </Typography>
-      <Typography sx={{ fontSize: "clamp(15px, 0.79vw, 9999px)" }}>
-        {summary}
-      </Typography>
-      <Divider />
-      <Box id="editor" sx={{ marginTop: "10px" }}></Box>
-      <Divider />
-      <Typography
-        sx={{ fontSize: "clamp(15px,0.79vw, 9999px)", textAlign: "right" }}
-      >{`Created at : ${convertTimestamp(createDate)} || Last edited at : ${convertTimestamp(editDate)}`}</Typography>
-      <Divider />
-    </Box>
-  );
+  }
+  // title과 summary를 각각 현재 페이지의 title과 description으로 설정함
+  return {
+    title: post.title,
+    description: post.summary,
+  };
 }
 
-export default PostView;
+export default async function PostPage({
+  params,
+}: {
+  params: {
+    postId: string;
+  };
+}) {
+  // supabase client를 불러올 때는 반드시 async - await를 사용하자!
+  const sbClient = await createClient();
+  // supabase에서 데이터를 불러올 때도 반드시 async - await를 사용하자!
+  const { data: post, error } = await sbClient
+    .from("post")
+    .select("*")
+    .eq("postId", params.postId)
+    .single();
+  // 포스트 데이터를 불러올 때 에러가 발생하거나 데이터가 없으면 Not Found 화면을 띄움!
+  if (error || !post) {
+    notFound();
+  }
+
+  const postDataForClient = {
+    title: post.title,
+    summary: post.summary,
+    content: post.content,
+    createDate: post.createDate,
+    editDate: post.editDate,
+  };
+
+  return <PostViewClient initialPostData={postDataForClient} />;
+}
