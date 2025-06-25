@@ -52,7 +52,7 @@ function PostViewClient({ initialPostData }: PostViewClientProps) {
     };
   }, [initialPostData.content]);
 
-  //
+  // timestamp를 변환하는 함수
   const convertTimestamp = (time: string) => {
     const date = new Date(time);
     const year = String(date.getFullYear());
