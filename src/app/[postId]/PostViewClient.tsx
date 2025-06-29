@@ -2,12 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { Crepe } from "@milkdown/crepe";
+import parse from "html-react-parser";
+import DOMPurify from "dompurify";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import "@milkdown/crepe/theme/common/style.css";
-import "@milkdown/crepe/theme/frame.css";
-import "./read.css";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import IconButton from "@mui/material/IconButton";
 import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
@@ -24,33 +22,8 @@ interface PostViewClientProps {
 }
 
 function PostViewClient({ initialPostData }: PostViewClientProps) {
-  const crepeRef = React.useRef<Crepe | null>(null);
-  const [mounted, setMounted] = React.useState(false);
   const router = useRouter();
-
-  React.useEffect(() => {
-    // PostViewClient 컴포넌트가 마운트 됐다고 상태를 업데이트함
-    setMounted(true);
-    // crepe editor가 ref에 할당되지 않고 렌더링할 content가 존재하는 상태라면
-    // 읽기 전용 에디터를 새로 생성함
-    if (!crepeRef.current && initialPostData.content) {
-      requestAnimationFrame(() => {
-        const crepe = new Crepe({
-          root: "#editor",
-          defaultValue: initialPostData.content,
-        });
-        crepe.create();
-        crepe.setReadonly(true);
-        crepeRef.current = crepe;
-      });
-    }
-    return () => {
-      if (crepeRef.current) {
-        crepeRef.current.destroy?.();
-        crepeRef.current = null;
-      }
-    };
-  }, [initialPostData.content]);
+  const safeHtml = DOMPurify.sanitize(initialPostData.content);
 
   // timestamp를 변환하는 함수
   const convertTimestamp = (time: string) => {
@@ -61,7 +34,7 @@ function PostViewClient({ initialPostData }: PostViewClientProps) {
     return `${year}-${month}-${day}`;
   };
 
-  if (!mounted) return null;
+  // if (!mounted) return null;
 
   return (
     <Box
@@ -98,7 +71,7 @@ function PostViewClient({ initialPostData }: PostViewClientProps) {
         {initialPostData.summary}
       </Typography>
       <Divider />
-      <Box id="editor" sx={{ marginTop: "10px" }}></Box>
+      <Box className="contentBox">{parse(safeHtml)}</Box>
       <Divider />
       <Typography
         sx={{ fontSize: "clamp(15px,0.79vw, 9999px)", textAlign: "right" }}

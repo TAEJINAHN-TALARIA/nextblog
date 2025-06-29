@@ -3,23 +3,95 @@
 
 import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
-import { Crepe, CrepeFeature } from "@milkdown/crepe";
 import { sbClient } from "@/app/utils/sbClient";
 import * as React from "react";
+import { CirclePicker } from "react-color";
 import Box from "@mui/material/Box";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
-import "@milkdown/crepe/theme/common/style.css";
-import "@milkdown/crepe/theme/frame.css";
-import "./create.css";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { StarterKit } from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import { Color } from "@tiptap/extension-color";
+import TextStyle from "@tiptap/extension-text-style";
+import { FileHandler } from "@tiptap/extension-file-handler";
+import "./tiptap.css";
 
 function CreatePost() {
   const [postId, setPostId] = React.useState<string | null>(null);
   const [title, setTitle] = React.useState<string>("");
   const [summary, setSummary] = React.useState<string>("");
-  const crepeRef = React.useRef<Crepe | null>(null);
+  const [content, setContent] = React.useState<string>("");
+  const [fontColor, setFontColor] = React.useState<string>("#F44336");
+  const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const router = useRouter();
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color.configure({ types: ["textStyle"] }),
+      Image.configure({ inline: true, allowBase64: true }),
+      FileHandler.configure({
+        onDrop: (currentEditor, files, pos) => {
+          files.forEach((file) => {
+            const fileReader = new FileReader();
+
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => {
+              currentEditor
+                .chain()
+                .insertContentAt(pos, {
+                  type: "image",
+                  attrs: {
+                    src: fileReader.result,
+                  },
+                })
+                .focus()
+                .run();
+            };
+          });
+        },
+        onPaste: (currentEditor, files, htmlContent) => {
+          files.forEach((file) => {
+            if (htmlContent) {
+              // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
+              // you could extract the pasted file from this url string and upload it to a server for example
+              console.log(htmlContent); // eslint-disable-line no-console
+              return false;
+            }
+
+            const fileReader = new FileReader();
+
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => {
+              currentEditor
+                .chain()
+                .insertContentAt(currentEditor.state.selection.anchor, {
+                  type: "image",
+                  attrs: {
+                    src: fileReader.result,
+                  },
+                })
+                .focus()
+                .run();
+            };
+          });
+        },
+      }),
+    ],
+    content: "<p>Hello, World!</p>",
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML());
+    },
+  });
+
+  const handleChange = (color: { hex: string }) => {
+    setFontColor(color.hex);
+    setColorPickerOpen(false);
+    editor?.chain().focus().setColor(color.hex).run();
+  };
 
   // SAVE / SAVE DRAFT 버튼 클릭 시 작동하는 데이터 저장 함수
   const onClickSave = async (draftYn: boolean) => {
@@ -28,8 +100,6 @@ function CreatePost() {
       alert("Please enter a title and summary both");
       return;
     } else {
-      // content : 현재까지 작성된 에디터 내용
-      const content = crepeRef.current?.getMarkdown() || "";
       // supabase database에 생성되어 있는 'post' 테이블에 아래와 같은 사항을 저장함
       const { data, error } = await sbClient.from("post").insert([
         {
@@ -54,82 +124,10 @@ function CreatePost() {
     }
   };
 
-  // CreatePost 컴포넌트가 마운트될 때, 신규 포스트에 할당할 id값을 생성함
   React.useEffect(() => {
-    const newPostId = nanoid();
-    setPostId(newPostId);
-  }, []);
-
-  React.useEffect(() => {
-    // postId가 생성된 후에 crepe Editor를 생성함
-    if (!postId) return;
-    const crepe = new Crepe({
-      // crepe Editor를 'editor'라는 ID값을 가진 Box Component에 나타나게 함
-      root: "#editor",
-      // Placeholder를 Hello World로 지정함
-      defaultValue: "Hello World",
-      featureConfigs: {
-        [CrepeFeature.ImageBlock]: {
-          onUpload: async (file: File): Promise<string> => {
-            try {
-              // 업로드하는 파일의 확장자명을 가져옴
-              const fileExtension = file.name.split(".").pop();
-              // 업로드하는 파일의 이름을 'postId_현재타임스탬프.확장자'로 함
-              const fileName = `${postId}_${Date.now()}.${fileExtension}`;
-              // storage 내 'post-image' bucket에 저장함
-              const bucketName = "post-image";
-              // 'post-image' bucket 안에서도 각 postId 대로 폴더를 생성하여 이미지를 저장함
-              const folderPath = `${postId}`;
-              // 이미지 저장경로를 filePath로 저장함
-              const filePath = `${folderPath}/${fileName}`;
-              // 이미지 파일을 supabase에 업로드함
-              const { data, error } = await sbClient.storage
-                .from(bucketName)
-                .upload(filePath, file, {
-                  cacheControl: "3600",
-                  upsert: false,
-                });
-              if (error) {
-                throw error;
-              } else {
-                console.log("upload success", data);
-              }
-              // 저장한 이미지 파일에서 PublicURL을 가져와 Markdown에 저장함
-              const { data: publicUrlData } = sbClient.storage
-                .from(bucketName)
-                .getPublicUrl(filePath);
-              // 업로드한 파일에 대한 PublicURL을 Return함
-              if (!publicUrlData || !publicUrlData.publicUrl) {
-                throw new Error(
-                  "Could not get public URL for the uploaded image",
-                );
-              }
-              return publicUrlData.publicUrl;
-            } catch (error: unknown) {
-              if (error instanceof Error) {
-                console.error(
-                  "Supabase image upload failed",
-                  error.message || error,
-                );
-              } else {
-                console.error(
-                  "Supabase image upload failed",
-                  "An unknown error occurred",
-                );
-              }
-              return "https://plus.unsplash.com/premium_photo-1682310096066-20c267e20605?q=80&w=1212&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-            }
-          },
-        },
-      },
-    });
-    crepe.create();
-    crepeRef.current = crepe;
-
-    return () => {
-      // 본 컴포넌트가 언마운트될 때, crepe editor도 지우는 것으로 함
-      crepe.destroy();
-    };
+    if (!postId) {
+      setPostId(nanoid());
+    }
   }, [postId]);
 
   return (
@@ -176,7 +174,45 @@ function CreatePost() {
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
       />
-      <Box id="editor" sx={{ marginTop: "10px" }}></Box>
+      <Box
+        sx={{
+          marginTop: "20px",
+          position: "relative",
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "10px",
+        }}
+        aria-label="Editor button group"
+      >
+        <Button
+          onClick={() => {
+            setColorPickerOpen((prev) => !prev);
+          }}
+          variant="contained"
+          sx={{ backgroundColor: "#143340" }}
+        >
+          TEXT COLOR
+        </Button>
+
+        <Box
+          className="colorPickerBox"
+          style={{
+            display: colorPickerOpen ? "block" : "none",
+            position: "absolute",
+            backgroundColor: "#f7f7f7",
+            padding: "10px",
+            top: "calc(100% + 10px)",
+            borderRadius: "5px",
+            border: "1px solid black",
+            zIndex: "9999",
+          }}
+        >
+          <CirclePicker color={fontColor} onChange={handleChange} />
+        </Box>
+      </Box>
+      <Box sx={{ marginTop: "20px" }}>
+        <EditorContent editor={editor} />
+      </Box>
     </Box>
   );
 }

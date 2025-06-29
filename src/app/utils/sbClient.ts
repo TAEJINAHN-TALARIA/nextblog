@@ -49,6 +49,32 @@ export async function deletePost(postId: string) {
   }
 }
 
+export async function deletePostImages(postId: string) {
+  const { data, error } = await sbClient.storage
+    .from("post-image")
+    .list(`${postId}`);
+
+  if (error) {
+    console.error("Error listing files : ", error);
+    return;
+  }
+  const filesToDelete = data.map((file) => `${postId}/${file.name}`);
+
+  if (filesToDelete.length > 0) {
+    const { data, error } = await sbClient.storage
+      .from("post-image")
+      .remove(filesToDelete);
+    if (error) {
+      console.error("Error deleting files:", error);
+    } else {
+      console.log("Files deleted successfully:", data);
+      console.log(`Folder '${postId}' is now empty and should be removed.`);
+    }
+  } else {
+    console.log(`Folder '${postId}' is already empty.`);
+  }
+}
+
 export async function upDatePostState(postId: string, value: number) {
   const draftYn = value != 0;
   const { data, error } = await sbClient

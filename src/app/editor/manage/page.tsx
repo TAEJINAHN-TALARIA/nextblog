@@ -5,6 +5,7 @@ import {
   fetchAllPosts,
   deletePost,
   upDatePostState,
+  deletePostImages,
 } from "@/app/utils/sbClient";
 import { useRouter } from "next/navigation";
 import { Dialog, Divider } from "@mui/material";
@@ -63,7 +64,11 @@ function ManagePost() {
     const deleteTargetPost = async () => {
       await deletePost(postId);
     };
+    const deleteTargetPostImage = async () => {
+      await deletePostImages(postId);
+    };
     deleteTargetPost();
+    deleteTargetPostImage();
     setDialogOpen(false);
     window.location.reload();
   };
