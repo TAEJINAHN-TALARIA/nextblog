@@ -4,110 +4,108 @@
 import { useRouter, useParams } from "next/navigation";
 import { sbClient, fetchPost } from "@/app/utils/sbClient";
 import * as React from "react";
+import { CirclePicker } from "react-color";
 import Box from "@mui/material/Box";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { StarterKit } from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import { Color } from "@tiptap/extension-color";
+import TextStyle from "@tiptap/extension-text-style";
+import { FileHandler } from "@tiptap/extension-file-handler";
+import "@/app/utils/commonCss/tiptap.css";
 
-function UpdatePostQuill() {
+function UpdatePost() {
   const targetPostId = useParams<{ postId: string }>().postId;
   const [title, setTitle] = React.useState<string>("");
   const [summary, setSummary] = React.useState<string>("");
-  const [content, setContent] = React.useState<string>("");
+  const [content, setContent] = React.useState<string | null>(null);
+  const [fontColor, setFontColor] = React.useState<string>("#F44336");
+  const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const router = useRouter();
 
-  // const modules = {
-  //   toolbar: {
-  //     container: [
-  //       [{ font: [] }, { size: [] }],
-  //       ["bold", "italic", "underline"],
-  //       [{ color: [] }, { background: [] }],
-  //       [{ script: "super" }, { script: "sub" }],
-  //       [{ header: 1 }, { header: 2 }],
-  //       [{ list: "ordered" }, { list: "bullet" }],
-  //       ["link", "image", "video"],
-  //       ["clean"],
-  //     ],
-  //     handlers: {
-  //       image: async () => {
-  //         if (!quillRef.current) {
-  //           return;
-  //         }
-  //         const quillInstance = quillRef.current.getEditor();
-  //         const input = document.createElement("input");
-  //         input.setAttribute("type", "file");
-  //         input.setAttribute("accept", "image/*");
-  //         input.click();
-  //
-  //         input.onchange = async () => {
-  //           const file = input.files?.[0];
-  //           try {
-  //             if (file) {
-  //               // 업로드하는 파일의 확장자명을 가져옴
-  //               const fileExtension = file.name.split(".").pop();
-  //               // 업로드하는 파일의 이름을 'postId_현재타임스탬프.확장자'로 함
-  //               const fileName = `${targetPostId}_${Date.now()}.${fileExtension}`;
-  //               // storage 내 'post-image' bucket에 저장함
-  //               const bucketName = "post-image";
-  //               // 'post-image' bucket 안에서도 각 postId 대로 폴더를 생성하여 이미지를 저장함
-  //               const folderPath = `${targetPostId}`;
-  //               // 이미지 저장경로를 filePath로 저장함
-  //               const filePath = `${folderPath}/${fileName}`;
-  //               const { data, error } = await sbClient.storage
-  //                 .from(bucketName)
-  //                 .upload(filePath, file, {
-  //                   cacheControl: "3600",
-  //                   upsert: false,
-  //                 });
-  //               if (error) {
-  //                 throw error;
-  //               } else {
-  //                 console.log("upload success", data);
-  //               }
-  //               const { data: publicUrlData } = sbClient.storage
-  //                 .from(bucketName)
-  //                 .getPublicUrl(filePath);
-  //               // 업로드한 파일에 대한 PublicURL을 Return함
-  //               if (!publicUrlData || !publicUrlData.publicUrl) {
-  //                 throw new Error(
-  //                   "Could not get public URL for the uploaded image",
-  //                 );
-  //               }
-  //               const range = quillInstance.getSelection(true);
-  //               quillInstance.insertEmbed(
-  //                 range.index,
-  //                 "image",
-  //                 publicUrlData.publicUrl,
-  //               );
-  //               quillInstance.setSelection(range.index + 1);
-  //             }
-  //           } catch (error: unknown) {
-  //             if (error instanceof Error) {
-  //               console.error(
-  //                 "Uploading image or inserting image failed",
-  //                 error.message || error,
-  //               );
-  //             } else {
-  //               console.error(
-  //                 "Uploading image or inserting image failed",
-  //                 "An unknown error occurred",
-  //               );
-  //             }
-  //             return "https://plus.unsplash.com/premium_photo-1682310096066-20c267e20605?q=80&w=1212&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-  //           }
-  //         };
-  //       }, // 예: 이미지 업로드 핸들러
-  //     },
-  //   },
-  //   clipboard: {
-  //     matchVisual: false, // 붙여넣기 시 스타일 유지 여부
-  //   },
-  //   history: {
-  //     delay: 1000,
-  //     maxStack: 100,
-  //     userOnly: true,
-  //   },
-  // };
+  React.useEffect(() => {
+    if (!targetPostId) return;
+    const fetchTargetPost = async () => {
+      const data = await fetchPost(targetPostId);
+      if (data) {
+        setTitle(data[0].title);
+        setSummary(data[0].summary);
+        setContent(data[0].content);
+      }
+    };
+    fetchTargetPost();
+  }, [targetPostId]);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color.configure({ types: ["textStyle"] }),
+      Image.configure({ inline: true, allowBase64: true }),
+      FileHandler.configure({
+        onDrop: (currentEditor, files, pos) => {
+          files.forEach((file) => {
+            const fileReader = new FileReader();
+
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => {
+              currentEditor
+                .chain()
+                .insertContentAt(pos, {
+                  type: "image",
+                  attrs: {
+                    src: fileReader.result,
+                  },
+                })
+                .focus()
+                .run();
+            };
+          });
+        },
+        onPaste: (currentEditor, files, htmlContent) => {
+          files.forEach((file) => {
+            if (htmlContent) {
+              // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
+              // you could extract the pasted file from this url string and upload it to a server for example
+              console.log(htmlContent);
+              return false;
+            }
+
+            const fileReader = new FileReader();
+
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => {
+              currentEditor
+                .chain()
+                .insertContentAt(currentEditor.state.selection.anchor, {
+                  type: "image",
+                  attrs: {
+                    src: fileReader.result,
+                  },
+                })
+                .focus()
+                .run();
+            };
+          });
+        },
+      }),
+    ],
+    content: content,
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML());
+    },
+  });
+
+  React.useEffect(() => {
+    if (editor && content) {
+      if (editor.isEmpty) {
+        editor.commands.setContent(content);
+      }
+    }
+  }, [editor, content]);
 
   // SAVE / SAVE DRAFT 버튼 클릭 시 작동하는 데이터 저장 함수
   const onClickSave = async (draftYn: boolean) => {
@@ -139,18 +137,13 @@ function UpdatePostQuill() {
     }
   };
 
-  React.useEffect(() => {
-    if (!targetPostId) return;
-    const fetchTargetPost = async () => {
-      const data = await fetchPost(targetPostId);
-      if (data) {
-        setTitle(data[0].title);
-        setSummary(data[0].summary);
-        setContent(data[0].content);
-      }
-    };
-    fetchTargetPost();
-  }, [targetPostId]);
+  const handleChange = (color: { hex: string }) => {
+    setFontColor(color.hex);
+    setColorPickerOpen(false);
+    editor?.chain().focus().setColor(color.hex).run();
+  };
+
+  if (!content) return;
 
   return (
     <Box
@@ -196,16 +189,47 @@ function UpdatePostQuill() {
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
       />
-      {/*<QuillNoSSRWrapper*/}
-      {/*  forwardedRef={quillRef}*/}
-      {/*  theme="snow"*/}
-      {/*  value={content}*/}
-      {/*  onChange={setContent}*/}
-      {/*  style={{ marginTop: "20px" }}*/}
-      {/*  modules={modules}*/}
-      {/*/>*/}
+      <Box
+        sx={{
+          marginTop: "20px",
+          position: "relative",
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "10px",
+        }}
+        aria-label="Editor button group"
+      >
+        <Button
+          onClick={() => {
+            setColorPickerOpen((prev) => !prev);
+          }}
+          variant="contained"
+          sx={{ backgroundColor: "#143340" }}
+        >
+          TEXT COLOR
+        </Button>
+
+        <Box
+          className="colorPickerBox"
+          style={{
+            display: colorPickerOpen ? "block" : "none",
+            position: "absolute",
+            backgroundColor: "#f7f7f7",
+            padding: "10px",
+            top: "calc(100% + 10px)",
+            borderRadius: "5px",
+            border: "1px solid black",
+            zIndex: "9999",
+          }}
+        >
+          <CirclePicker color={fontColor} onChange={handleChange} />
+        </Box>
+      </Box>
+      <Box sx={{ marginTop: "20px" }}>
+        <EditorContent editor={editor} />
+      </Box>
     </Box>
   );
 }
 
-export default UpdatePostQuill;
+export default UpdatePost;

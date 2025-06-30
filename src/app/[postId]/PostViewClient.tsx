@@ -10,6 +10,7 @@ import ButtonGroup from "@mui/material/ButtonGroup";
 import IconButton from "@mui/material/IconButton";
 import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
 import { Divider } from "@mui/material";
+import "@/app/utils/commonCss/tiptap.css";
 
 interface PostViewClientProps {
   initialPostData: {

@@ -16,7 +16,7 @@ import Image from "@tiptap/extension-image";
 import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
 import { FileHandler } from "@tiptap/extension-file-handler";
-import "./tiptap.css";
+import "../../utils/commonCss/tiptap.css";
 
 function CreatePost() {
   const [postId, setPostId] = React.useState<string | null>(null);
@@ -58,7 +58,7 @@ function CreatePost() {
             if (htmlContent) {
               // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
               // you could extract the pasted file from this url string and upload it to a server for example
-              console.log(htmlContent); // eslint-disable-line no-console
+              console.log(htmlContent);
               return false;
             }
 

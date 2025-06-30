@@ -1,0 +1,43 @@
+/* Basic editor styles */
+.tiptap {
+    padding : 10px;
+    :first-child {
+        margin-top: 0;
+    }
+
+    blockquote {
+        border-left: 3px solid #98A6A4;
+        margin: 1.5rem 0;
+        padding-left: 1rem;
+    }
+
+    img {
+        width : 80%;
+        height: auto;
+        text-align: center;
+    }
+}
+
+.contentBox {
+    padding : 10px;
+    :first-child {
+        margin-top: 0;
+    }
+
+    blockquote {
+        border-left: 3px solid #98A6A4;
+        margin: 1.5rem 0;
+        padding-left: 1rem;
+    }
+
+    img {
+        width : 80%;
+        height: auto;
+        text-align: center;
+    }
+}
+
+.react-colorful__pointer {
+    width : 15px !important;
+    height: 15px !important;
+}
