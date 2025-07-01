@@ -16,7 +16,9 @@ import Image from "@tiptap/extension-image";
 import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
 import { FileHandler } from "@tiptap/extension-file-handler";
-import "../../utils/commonCss/tiptap.css";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { all, createLowlight } from "lowlight";
+import "@/app/utils/commonCss/tiptap.css";
 
 function CreatePost() {
   const [postId, setPostId] = React.useState<string | null>(null);
@@ -26,6 +28,7 @@ function CreatePost() {
   const [fontColor, setFontColor] = React.useState<string>("#F44336");
   const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const router = useRouter();
+  const lowlight = createLowlight(all);
 
   const editor = useEditor({
     extensions: [
@@ -80,6 +83,7 @@ function CreatePost() {
           });
         },
       }),
+      CodeBlockLowlight.configure({ lowlight }),
     ],
     content: "<p>Hello, World!</p>",
     onUpdate: ({ editor }) => {

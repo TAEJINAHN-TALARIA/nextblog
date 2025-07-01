@@ -15,6 +15,8 @@ import Image from "@tiptap/extension-image";
 import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
 import { FileHandler } from "@tiptap/extension-file-handler";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { all, createLowlight } from "lowlight";
 import "@/app/utils/commonCss/tiptap.css";
 
 function UpdatePost() {
@@ -25,6 +27,7 @@ function UpdatePost() {
   const [fontColor, setFontColor] = React.useState<string>("#F44336");
   const [colorPickerOpen, setColorPickerOpen] = React.useState(false);
   const router = useRouter();
+  const lowlight = createLowlight(all);
 
   React.useEffect(() => {
     if (!targetPostId) return;
@@ -47,22 +50,44 @@ function UpdatePost() {
       Image.configure({ inline: true, allowBase64: true }),
       FileHandler.configure({
         onDrop: (currentEditor, files, pos) => {
-          files.forEach((file) => {
-            const fileReader = new FileReader();
-
-            fileReader.readAsDataURL(file);
-            fileReader.onload = () => {
+          files.forEach(async (file) => {
+            // 업로드하는 파일의 확장자명을 가져옴
+            const fileExtension = file.name.split(".").pop();
+            // 업로드하는 파일의 이름을 'postId_현재타임스탬프.확장자'로 함
+            const fileName = `${targetPostId}_${Date.now()}.${fileExtension}`;
+            // storage 내 'post-image' bucket에 저장함
+            const bucketName = "post-image";
+            // 'post-image' bucket 안에서도 각 postId 대로 폴더를 생성하여 이미지를 저장함
+            const folderPath = `${targetPostId}`;
+            // 이미지 저장경로를 filePath로 저장함
+            const filePath = `${folderPath}/${fileName}`;
+            // 이미지 파일을 supabase에 업로드함
+            const { data, error } = await sbClient.storage
+              .from(bucketName)
+              .upload(filePath, file, {
+                cacheControl: "3600",
+                upsert: false,
+              });
+            if (error) {
+              throw error;
+            } else {
+              console.log("upload success", data);
+            }
+            const { data: publicUrlData } = sbClient.storage
+              .from(bucketName)
+              .getPublicUrl(filePath);
+            if (publicUrlData.publicUrl) {
               currentEditor
                 .chain()
                 .insertContentAt(pos, {
                   type: "image",
                   attrs: {
-                    src: fileReader.result,
+                    src: publicUrlData.publicUrl,
                   },
                 })
                 .focus()
                 .run();
-            };
+            }
           });
         },
         onPaste: (currentEditor, files, htmlContent) => {
@@ -92,6 +117,7 @@ function UpdatePost() {
           });
         },
       }),
+      CodeBlockLowlight.configure({ lowlight }),
     ],
     content: content,
     onUpdate: ({ editor }) => {

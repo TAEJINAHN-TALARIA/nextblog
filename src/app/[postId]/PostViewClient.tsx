@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import parse from "html-react-parser";
-import DOMPurify from "dompurify";
+import createDompurify from "dompurify";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import ButtonGroup from "@mui/material/ButtonGroup";
@@ -24,7 +24,7 @@ interface PostViewClientProps {
 
 function PostViewClient({ initialPostData }: PostViewClientProps) {
   const router = useRouter();
-  const safeHtml = DOMPurify.sanitize(initialPostData.content);
+  const [sanitizedContent, setSanitizedContent] = React.useState("");
 
   // timestamp를 변환하는 함수
   const convertTimestamp = (time: string) => {
@@ -35,7 +35,12 @@ function PostViewClient({ initialPostData }: PostViewClientProps) {
     return `${year}-${month}-${day}`;
   };
 
-  // if (!mounted) return null;
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const DOMPurify = createDompurify(window);
+      setSanitizedContent(DOMPurify.sanitize(initialPostData.content));
+    }
+  }, [initialPostData.content]);
 
   return (
     <Box
@@ -72,7 +77,7 @@ function PostViewClient({ initialPostData }: PostViewClientProps) {
         {initialPostData.summary}
       </Typography>
       <Divider />
-      <Box className="contentBox">{parse(safeHtml)}</Box>
+      <Box className="contentBox">{parse(sanitizedContent)}</Box>
       <Divider />
       <Typography
         sx={{ fontSize: "clamp(15px,0.79vw, 9999px)", textAlign: "right" }}
