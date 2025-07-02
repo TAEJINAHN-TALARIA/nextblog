@@ -11,6 +11,8 @@ import IconButton from "@mui/material/IconButton";
 import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
 import { Divider } from "@mui/material";
 import "@/app/utils/commonCss/tiptap.css";
+import hljs from "highlight.js";
+import "highlight.js/styles/github-dark.css";
 
 interface PostViewClientProps {
   initialPostData: {
@@ -25,6 +27,13 @@ interface PostViewClientProps {
 function PostViewClient({ initialPostData }: PostViewClientProps) {
   const router = useRouter();
   const [sanitizedContent, setSanitizedContent] = React.useState("");
+  const contentRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (contentRef.current) {
+      hljs.highlightAll();
+    }
+  }, [initialPostData.content]);
 
   // timestamp를 변환하는 함수
   const convertTimestamp = (time: string) => {
@@ -77,10 +86,17 @@ function PostViewClient({ initialPostData }: PostViewClientProps) {
         {initialPostData.summary}
       </Typography>
       <Divider />
-      <Box className="contentBox">{parse(sanitizedContent)}</Box>
+      <Box ref={contentRef} className="contentBox">
+        {parse(sanitizedContent)}
+      </Box>
       <Divider />
       <Typography
-        sx={{ fontSize: "clamp(15px,0.79vw, 9999px)", textAlign: "right" }}
+        sx={{
+          fontSize: "clamp(14px, 0.79vw, 9999px)",
+          textAlign: "right",
+          paddingTop: "5px",
+          paddingBottom: "5px",
+        }}
       >{`Created at : ${convertTimestamp(initialPostData.createDate)} || Last edited at : ${convertTimestamp(initialPostData.editDate)}`}</Typography>
       <Divider />
     </Box>

@@ -19,6 +19,14 @@ import { FileHandler } from "@tiptap/extension-file-handler";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { all, createLowlight } from "lowlight";
 import "@/app/utils/commonCss/tiptap.css";
+import Link from "@tiptap/extension-link";
+
+interface InstanceError {
+  message: string;
+  response?: {
+    status: number;
+  };
+}
 
 function CreatePost() {
   const [postId, setPostId] = React.useState<string | null>(null);
@@ -84,6 +92,12 @@ function CreatePost() {
         },
       }),
       CodeBlockLowlight.configure({ lowlight }),
+      Link.configure({
+        autolink: false,
+        HTMLAttributes: {
+          className: "tiptapLink",
+        },
+      }),
     ],
     content: "<p>Hello, World!</p>",
     onUpdate: ({ editor }) => {
@@ -133,6 +147,35 @@ function CreatePost() {
       setPostId(nanoid());
     }
   }, [postId]);
+
+  const setLink = React.useCallback(() => {
+    const previousUrl = editor?.getAttributes("link").href;
+    const url = window.prompt("URL", previousUrl);
+
+    // cancelled
+    if (url === null) {
+      return;
+    }
+
+    // empty
+    if (url === "") {
+      editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+
+    // update link
+    try {
+      editor
+        ?.chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: url })
+        .run();
+    } catch (e: unknown) {
+      const err = e as InstanceError;
+      console.error(err.response?.status, err.message);
+    }
+  }, [editor]);
 
   return (
     <Box
@@ -188,6 +231,21 @@ function CreatePost() {
         }}
         aria-label="Editor button group"
       >
+        <Button
+          onClick={setLink}
+          variant="contained"
+          sx={{ backgroundColor: "#143340" }}
+        >
+          SET LINK
+        </Button>
+        <Button
+          onClick={() => editor?.chain().focus().unsetLink().run()}
+          disabled={!editor?.isActive("link")}
+          variant="contained"
+          sx={{ backgroundColor: "#143340" }}
+        >
+          UNSET LINK
+        </Button>
         <Button
           onClick={() => {
             setColorPickerOpen((prev) => !prev);

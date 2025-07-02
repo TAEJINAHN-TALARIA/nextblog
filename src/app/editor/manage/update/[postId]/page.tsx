@@ -16,9 +16,16 @@ import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
 import { FileHandler } from "@tiptap/extension-file-handler";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import Link from "@tiptap/extension-link";
 import { all, createLowlight } from "lowlight";
 import "@/app/utils/commonCss/tiptap.css";
 
+interface InstanceError {
+  message: string;
+  response?: {
+    status: number;
+  };
+}
 function UpdatePost() {
   const targetPostId = useParams<{ postId: string }>().postId;
   const [title, setTitle] = React.useState<string>("");
@@ -118,6 +125,12 @@ function UpdatePost() {
         },
       }),
       CodeBlockLowlight.configure({ lowlight }),
+      Link.configure({
+        autolink: false,
+        HTMLAttributes: {
+          className: "tiptapLink",
+        },
+      }),
     ],
     content: content,
     onUpdate: ({ editor }) => {
@@ -169,7 +182,36 @@ function UpdatePost() {
     editor?.chain().focus().setColor(color.hex).run();
   };
 
-  if (!content) return;
+  const setLink = React.useCallback(() => {
+    const previousUrl = editor?.getAttributes("link").href;
+    const url = window.prompt("URL", previousUrl);
+
+    // cancelled
+    if (url === null) {
+      return;
+    }
+
+    // empty
+    if (url === "") {
+      editor?.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+
+    // update link
+    try {
+      editor
+        ?.chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: url })
+        .run();
+    } catch (e: unknown) {
+      const err = e as InstanceError;
+      console.error(err.response?.status, err.message);
+    }
+  }, [editor]);
+
+  // if (!content) return;
 
   return (
     <Box
@@ -226,6 +268,21 @@ function UpdatePost() {
         aria-label="Editor button group"
       >
         <Button
+          onClick={setLink}
+          variant="contained"
+          sx={{ backgroundColor: "#143340" }}
+        >
+          SET LINK
+        </Button>
+        <Button
+          onClick={() => editor?.chain().focus().unsetLink().run()}
+          disabled={!editor?.isActive("link")}
+          variant="contained"
+          sx={{ backgroundColor: "#143340" }}
+        >
+          UNSET LINK
+        </Button>
+        <Button
           onClick={() => {
             setColorPickerOpen((prev) => !prev);
           }}
@@ -234,7 +291,6 @@ function UpdatePost() {
         >
           TEXT COLOR
         </Button>
-
         <Box
           className="colorPickerBox"
           style={{
