@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: "/editor/",
+      disallow: "/editor",
     },
     sitemap: "https://talariablog.vercel.app/sitemap.xml",
   };
