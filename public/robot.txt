@@ -1,4 +1,0 @@
-User-agent: *
-Disallow : /editor
-
-Sitemap : https://talariablog.vercel.app/sitemap.xml
