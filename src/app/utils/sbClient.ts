@@ -36,6 +36,20 @@ export async function fetchPublishedPosts() {
   return data;
 }
 
+export async function fetchPublishedPostId() {
+  const { data, error } = await sbClient
+    .from("post")
+    .select("postId, editDate")
+    .eq("draftYn", false);
+
+  if (error) {
+    console.error("Error fetching published postId list", error.message);
+    return null;
+  }
+
+  return data;
+}
+
 export async function deletePost(postId: string) {
   const { data, error } = await sbClient
     .from("post")

@@ -49,6 +49,7 @@ export default function Main() {
   React.useEffect(() => {
     const getPosts = async () => {
       const data = await fetchPublishedPosts();
+      console.log(data);
       setAllPostList(data || []);
       setDisplayPostList(data || []);
     };
