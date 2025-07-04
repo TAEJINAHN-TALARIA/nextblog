@@ -6,7 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts: MetadataRoute.Sitemap =
     postIdList?.map((post) => ({
       url: `https://talariablog.vercel.app/${post.postId}`,
-      lastModified: new Date(post.editDate),
+      lastModified: new Date(post.editDate).toISOString().split("T")[0],
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })) ?? [];
