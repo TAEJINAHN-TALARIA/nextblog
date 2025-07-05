@@ -62,7 +62,6 @@ export default function LoginPage() {
             Log in
           </Button>
         </Box>
-        {/*<button formAction={signup}>Sign up</button>*/}
       </Box>
     </Box>
   );

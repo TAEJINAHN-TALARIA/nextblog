@@ -41,6 +41,7 @@
     "google-one-tap": "^1.0.6",
     "highlight.js": "^11.11.1",
     "html-react-parser": "^5.2.5",
+    "isomorphic-dompurify": "^2.25.0",
     "lodash": "^4.17.21",
     "lowlight": "^3.3.0",
     "nanoid": "^5.1.5",

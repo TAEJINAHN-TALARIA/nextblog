@@ -1,4 +1,4 @@
-import { fetchPublishedPostId } from "./utils/sbClient";
+import { fetchPublishedPostId } from "@/app/utils/supabase/server";
 import { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

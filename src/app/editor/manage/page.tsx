@@ -6,7 +6,7 @@ import {
   deletePost,
   upDatePostState,
   deletePostImages,
-} from "@/app/utils/sbClient";
+} from "@/app/utils/supabase/server";
 import { useRouter } from "next/navigation";
 import { Dialog, Divider } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -60,24 +60,15 @@ function ManagePost() {
     return `${year}-${month}-${day}`;
   };
 
-  const onClickDelete = (postId: string) => {
-    const deleteTargetPost = async () => {
-      await deletePost(postId);
-    };
-    const deleteTargetPostImage = async () => {
-      await deletePostImages(postId);
-    };
-    deleteTargetPost();
-    deleteTargetPostImage();
+  const onClickDelete = async (postId: string) => {
+    await deletePost(postId);
+    await deletePostImages(postId);
     setDialogOpen(false);
     window.location.reload();
   };
 
-  const onClickUpdate = (postId: string, value: number) => {
-    const updateTargetPost = async () => {
-      await upDatePostState(postId, value);
-    };
-    updateTargetPost();
+  const onClickUpdate = async (postId: string, value: number) => {
+    await upDatePostState(postId, value);
     window.location.reload();
   };
 

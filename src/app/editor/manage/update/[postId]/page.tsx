@@ -2,7 +2,11 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { sbClient, fetchPost } from "@/app/utils/sbClient";
+import {
+  fetchPost,
+  updatePost,
+  uploadPostImages,
+} from "@/app/utils/supabase/server";
 import * as React from "react";
 import { CirclePicker } from "react-color";
 import Box from "@mui/material/Box";
@@ -58,31 +62,7 @@ function UpdatePost() {
       FileHandler.configure({
         onDrop: (currentEditor, files, pos) => {
           files.forEach(async (file) => {
-            // 업로드하는 파일의 확장자명을 가져옴
-            const fileExtension = file.name.split(".").pop();
-            // 업로드하는 파일의 이름을 'postId_현재타임스탬프.확장자'로 함
-            const fileName = `${targetPostId}_${Date.now()}.${fileExtension}`;
-            // storage 내 'post-image' bucket에 저장함
-            const bucketName = "post-image";
-            // 'post-image' bucket 안에서도 각 postId 대로 폴더를 생성하여 이미지를 저장함
-            const folderPath = `${targetPostId}`;
-            // 이미지 저장경로를 filePath로 저장함
-            const filePath = `${folderPath}/${fileName}`;
-            // 이미지 파일을 supabase에 업로드함
-            const { data, error } = await sbClient.storage
-              .from(bucketName)
-              .upload(filePath, file, {
-                cacheControl: "3600",
-                upsert: false,
-              });
-            if (error) {
-              throw error;
-            } else {
-              console.log("upload success", data);
-            }
-            const { data: publicUrlData } = sbClient.storage
-              .from(bucketName)
-              .getPublicUrl(filePath);
+            const publicUrlData = await uploadPostImages(targetPostId, file);
             if (publicUrlData.publicUrl) {
               currentEditor
                 .chain()
@@ -98,29 +78,26 @@ function UpdatePost() {
           });
         },
         onPaste: (currentEditor, files, htmlContent) => {
-          files.forEach((file) => {
+          files.forEach(async (file) => {
+            const publicUrlData = await uploadPostImages(targetPostId, file);
             if (htmlContent) {
               // if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
               // you could extract the pasted file from this url string and upload it to a server for example
               console.log(htmlContent);
               return false;
             }
-
-            const fileReader = new FileReader();
-
-            fileReader.readAsDataURL(file);
-            fileReader.onload = () => {
+            if (publicUrlData.publicUrl) {
               currentEditor
                 .chain()
                 .insertContentAt(currentEditor.state.selection.anchor, {
                   type: "image",
                   attrs: {
-                    src: fileReader.result,
+                    src: publicUrlData.publicUrl,
                   },
                 })
                 .focus()
                 .run();
-            };
+            }
           });
         },
       }),
@@ -153,24 +130,7 @@ function UpdatePost() {
       alert("Please enter a title and summary both");
       return;
     } else {
-      // supabase database에 생성되어 있는 'post' 테이블에 아래와 같은 사항을 저장함
-      const { data, error } = await sbClient
-        .from("post")
-        .update({
-          title: title,
-          summary: summary,
-          content: content,
-          draftYn: draftYn,
-          editDate: new Date(),
-        })
-        .eq("postId", targetPostId);
-      // error가 발생한 경우, 메시지를 콘솔 창에서 확인할 수 있도록 함
-      if (error) {
-        console.error("Error while saving post", error.message);
-        return;
-      } else {
-        console.log("Post saved", data);
-      }
+      await updatePost(targetPostId, title, summary, content, draftYn);
       // 저장한 후에는 editor 초기 화면으로 돌아옴
       router.push("/editor");
     }

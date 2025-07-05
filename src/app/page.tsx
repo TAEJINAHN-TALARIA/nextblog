@@ -9,7 +9,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import { fetchPublishedPosts } from "@/app/utils/sbClient";
+import { fetchPublishedPosts } from "@/app/utils/supabase/server";
 import Divider from "@mui/material/Divider";
 import { useRouter } from "next/navigation";
 
@@ -27,6 +27,7 @@ export default function Main() {
     [],
   );
   const [fieldWord, setFieldWord] = React.useState("");
+
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
