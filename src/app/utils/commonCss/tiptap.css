@@ -12,9 +12,8 @@
     }
 
     img {
-        width : 80%;
+        max-width: 95%;
         height: auto;
-        text-align: center;
     }
 
     pre {
@@ -24,7 +23,7 @@
         font-family: 'JetBrainsMono', monospace;
         margin: 1.5rem 0;
         padding: 0.75rem 1rem;
-        width : clamp(150px, 75%, 9999px);
+        width : clamp(250px, 75%, 9999px);
         overflow-x: auto ;
 
         code {

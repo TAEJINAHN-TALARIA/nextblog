@@ -16,6 +16,7 @@ import TextField from "@mui/material/TextField";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
+import { ImageResize } from "tiptap-extension-resize-image";
 import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
 import { FileHandler } from "@tiptap/extension-file-handler";
@@ -59,6 +60,7 @@ function UpdatePost() {
       TextStyle,
       Color.configure({ types: ["textStyle"] }),
       Image.configure({ inline: true, allowBase64: true }),
+      ImageResize,
       FileHandler.configure({
         onDrop: (currentEditor, files, pos) => {
           files.forEach(async (file) => {
