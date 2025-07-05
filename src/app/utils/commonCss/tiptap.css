@@ -5,15 +5,21 @@
         margin-top: 0;
     }
 
+    img {
+        max-width: 95%;
+        height: auto;
+    }
+
+    h2 {
+        font-size : clamp(22px, 1.25vw, 9999px);
+        margin-top : clamp(5px, 1.04vw, 15px);
+        margin-bottom : clamp(5px, 1.04vw, 15px);
+    }
+
     blockquote {
         border-left: 3px solid #98A6A4;
         margin: 1.5rem 0;
         padding-left: 1rem;
-    }
-
-    img {
-        max-width: 95%;
-        height: auto;
     }
 
     pre {
